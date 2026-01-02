@@ -373,8 +373,10 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     # 推送窗口配置
     config["PUSH_WINDOW"] = _load_push_window_config(config_data)
 
-    # 权重配置
-    config["WEIGHT_CONFIG"] = _load_weight_config(config_data)
+    # 权重配置 (同时提供 WEIGHT 和 WEIGHT_CONFIG 两个key以保持兼容性)
+    weight_config = _load_weight_config(config_data)
+    config["WEIGHT_CONFIG"] = weight_config
+    config["WEIGHT"] = weight_config
 
     # 平台配置
     config["PLATFORMS"] = config_data.get("platforms", [])

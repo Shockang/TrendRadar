@@ -32,29 +32,37 @@ class TestTrendRadarAPI:
         """创建带配置的 API 实例"""
         # 创建配置文件
         config_content = """
-PLATFORMS:
+platforms:
   - id: zhihu
     name: 知乎
   - id: weibo
     name: 微博
 
-REQUEST_INTERVAL: 1000
-TIMEZONE: Asia/Shanghai
-REPORT_MODE: daily
-RANK_THRESHOLD: 5
+advanced:
+  crawler:
+    request_interval: 1000
 
-STORAGE:
-  BACKEND: local
-  DATA_DIR: output
-  FORMATS:
-    SQLITE: true
-    TXT: false
-    HTML: true
+app:
+  timezone: Asia/Shanghai
 
-WEIGHT:
-  RANK: 0.6
-  FREQUENCY: 0.3
-  HOTNESS: 0.1
+report:
+  mode: daily
+  rank_threshold: 5
+
+storage:
+  backend: local
+  local:
+    data_dir: output
+  formats:
+    sqlite: true
+    txt: false
+    html: true
+
+advanced:
+  weight:
+    rank: 0.6
+    frequency: 0.3
+    hotness: 0.1
 """
         config_path = Path(temp_dir) / "config.yaml"
         config_path.write_text(config_content, encoding="utf-8")

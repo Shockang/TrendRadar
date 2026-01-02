@@ -6,7 +6,30 @@
 
 ## 本次迭代完成内容
 
-### 1. 核心API设计 ✅
+### 1. API bug修复和测试验证 ✅ (2026-01-02)
+
+修复了核心API中的多个问题,确保测试全部通过:
+
+- **修复导入错误**:
+  - 修复 `convert_crawl_results_to_news_data` 导入路径 (从 `core.data` 改为 `storage`)
+  - 修复 `StorageManager` 初始化参数 (`backend_type` 而非 `backend`)
+  - 修复 `count_frequency` 函数名 (`count_word_frequency`)
+  - 修复 `parse_word_groups` 函数名 (`load_frequency_words`)
+
+- **修复数据格式问题**:
+  - 更新 `filter_by_keywords` 方法以使用新的 word_groups 格式
+  - 修复 `analyze_news` 方法以正确转换关键词格式
+  - 修复 `fetch_news` 返回扁平化列表而非嵌套字典
+  - 修复 `get_news_by_date` 方法使用正确的存储管理器 API
+
+- **修复配置加载**:
+  - 同时支持 `WEIGHT` 和 `WEIGHT_CONFIG` 配置键以保持兼容性
+  - 修复关键词加载时的格式转换
+  - 更新测试文件使用正确的YAML配置格式
+
+- **测试结果**: 12个测试通过,1个跳过 ✅
+
+### 2. 核心API设计 ✅ (之前迭代完成)
 
 创建了简化的API接口 (`trendradar/core/api.py`):
 
@@ -203,10 +226,11 @@ python -m trendradar
    - [x] 编写单元测试
    - [x] 验证所有API方法
    - [x] 添加测试文档
+   - [x] 修复所有测试失败
    - [ ] 增加集成测试覆盖
    - [ ] 添加性能测试
 
-2. **文档完善** ✅ (部分完成)
+2. **文档完善** ✅ (已完成)
    - [x] 添加类型注解
    - [x] 完善依赖文档
    - [x] 添加测试说明
@@ -218,6 +242,13 @@ python -m trendradar
    - [x] 创建轻量级安装包
    - [ ] 优化依赖版本约束
    - [ ] 添加依赖安全检查
+
+4. **代码质量** (进行中)
+   - [x] 核心API模块类型注解
+   - [x] 核心功能模块类型注解
+   - [ ] 其他模块类型注解 (crawler, storage, notification)
+   - [ ] 添加mypy检查
+   - [ ] 提升代码覆盖率到90%+
 
 ### 中期
 
@@ -286,13 +317,14 @@ python -m trendradar
 
 ### 待解决 ⏳
 
-1. 核心模块以外的类型注解
+1. 其他模块的类型注解 (crawler, storage, notification等)
 2. 提高测试覆盖率（目标 90%+）
 3. 文档需要进一步完善（故障排查、最佳实践）
 4. 错误处理可以更细致
 5. 需要添加性能基准测试
 6. CI/CD 流程待建立
 7. 代码质量门禁待设置
+8. 添加mypy静态类型检查
 
 ## 资源链接
 

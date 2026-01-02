@@ -102,13 +102,19 @@ class TrendRadarAPI:
     def _load_keywords(self, keywords_path: Path) -> None:
         """加载关键词配置"""
         try:
-            from .frequency import parse_word_groups
+            from .frequency import load_frequency_words
 
-            with open(keywords_path, "r", encoding="utf-8") as f:
-                content = f.read()
+            word_groups, filter_words, global_filters = load_frequency_words(str(keywords_path))
 
-            word_groups, filter_words, global_filters = parse_word_groups(content)
-            self.keywords = word_groups
+            # 转换为旧格式（向后兼容）
+            self.keywords = []
+            for group in word_groups:
+                self.keywords.append({
+                    "words": group["normal"] + group["required"],
+                    "must_words": group["required"],
+                    "limit": group["max_count"]
+                })
+
             self.filter_words = filter_words
             self.global_filters = global_filters
         except Exception as e:
@@ -118,7 +124,6 @@ class TrendRadarAPI:
         """初始化核心组件"""
         from ..crawler import DataFetcher
         from ..storage import StorageManager
-        from .data import convert_crawl_results_to_news_data
 
         # 初始化爬虫
         proxy_url = self.config.get("DEFAULT_PROXY", "") if self.config.get("USE_PROXY") else None
@@ -128,8 +133,9 @@ class TrendRadarAPI:
         storage_config = self.config.get("STORAGE", {})
         data_dir = self.work_dir / storage_config.get("DATA_DIR", "output")
         self.storage = StorageManager(
-            backend=storage_config.get("BACKEND", "local"),
-            data_dir=str(data_dir)
+            backend_type=storage_config.get("BACKEND", "local"),
+            data_dir=str(data_dir),
+            timezone=self.config.get("TIMEZONE", "Asia/Shanghai")
         )
 
         # 时区
@@ -148,7 +154,7 @@ class TrendRadarAPI:
             max_items: 每个平台最大抓取数量
 
         Returns:
-            新闻数据列表
+            新闻数据列表（扁平化）
         """
         # 确定平台列表
         if platforms:
@@ -167,7 +173,7 @@ class TrendRadarAPI:
         crawl_time = datetime.now().strftime("%H:%M:%S")
         crawl_date = datetime.now().strftime("%Y-%m-%d")
 
-        from .data import convert_crawl_results_to_news_data
+        from ..storage import convert_crawl_results_to_news_data
         news_data = convert_crawl_results_to_news_data(
             results, id_to_name, failed_ids, crawl_time, crawl_date
         )
@@ -175,7 +181,13 @@ class TrendRadarAPI:
         # 保存到存储
         self.storage.save_news_data(news_data)
 
-        return news_data.to_dict()
+        # 转换为扁平化列表
+        news_list = []
+        for source_id, items in news_data.items.items():
+            for item in items:
+                news_list.append(item.to_dict())
+
+        return news_list
 
     def analyze_news(
         self,
@@ -192,16 +204,17 @@ class TrendRadarAPI:
         Returns:
             分析结果统计
         """
-        from .analyzer import count_frequency
+        from .analyzer import count_word_frequency
         from ..storage import convert_news_data_to_results
 
         # 获取数据
         if not news_data:
             # 从存储读取最新数据
             date_str = datetime.now().strftime("%Y-%m-%d")
-            news_data = self.storage.get_news_data_by_date(date_str)
-            if not news_data:
+            data = self.storage.get_today_all_data(date_str)
+            if not data or not data.items:
                 return {"error": "没有可用的新闻数据"}
+            news_data = data.to_dict()
 
         # 转换格式
         results, id_to_name = convert_news_data_to_results(news_data)
@@ -220,23 +233,26 @@ class TrendRadarAPI:
                     "mobileUrl": data.get("mobileUrl", ""),
                 }
 
-        # 获取关键词
+        # 获取关键词 - 转换为新格式
         word_groups = []
         if keywords:
-            word_groups = [{"words": keywords, "must_words": [], "limit": 0}]
+            word_groups = [{"required": [], "normal": keywords, "group_key": " ".join(keywords), "max_count": 0}]
         elif self.keywords:
+            # 已经在 _load_keywords 中转换过格式
             word_groups = self.keywords
 
         # 统计频率
-        stats, total = count_frequency(
+        stats, total = count_word_frequency(
             results,
             word_groups,
             self.filter_words,
             id_to_name,
             title_info,
-            {},
+            rank_threshold=self.config.get("RANK_THRESHOLD", 5),
+            new_titles={},
             mode="daily",
             global_filters=self.global_filters,
+            weight_config=self.config.get("WEIGHT_CONFIG") or self.config.get("WEIGHT", {}),
             quiet=True
         )
 
@@ -265,7 +281,11 @@ class TrendRadarAPI:
         """
         from .frequency import matches_word_groups
 
-        word_groups = [{"words": keywords, "must_words": [] if match_type == "any" else keywords, "limit": 0}]
+        # 构建符合新格式的 word_groups
+        if match_type == "all":
+            word_groups = [{"required": keywords, "normal": [], "group_key": " ".join(keywords), "max_count": 0}]
+        else:  # any
+            word_groups = [{"required": [], "normal": keywords, "group_key": " ".join(keywords), "max_count": 0}]
 
         filtered = []
         for news in news_data:
@@ -323,7 +343,10 @@ class TrendRadarAPI:
         Returns:
             新闻数据列表
         """
-        return self.storage.get_news_data_by_date(date)
+        news_data = self.storage.get_today_all_data(date)
+        if news_data:
+            return news_data.to_dict()
+        return None
 
     def export_html(
         self,
