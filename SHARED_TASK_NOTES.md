@@ -4,7 +4,111 @@
 
 将 TrendRadar 重构为简洁的 Python 库，方便集成到现有工程中，去除与核心功能无关的代码和文档。
 
-## 本次迭代完成内容 (2026-01-02 迭代 13)
+## 本次迭代完成内容 (2026-01-02 迭代 14)
+
+### 1. 核心 API 模块测试覆盖大幅提升 ✅
+
+- **扩展测试文件**: `tests/test_api.py`
+  - TestTrendRadarAPIAdvanced 测试类（7个新增测试）
+    - test_fetch_news_with_platforms：测试使用指定平台抓取新闻
+    - test_fetch_news_with_custom_max_items：测试自定义最大抓取数量
+    - test_analyze_news_with_data：测试分析有数据的情况
+    - test_analyze_news_with_dict_data_error：测试字典数据错误处理
+    - test_get_hot_topics_with_stats：测试获取热点话题（有统计数据）
+    - test_export_html_with_data：测试导出HTML（有数据）
+    - test_export_html_without_output_path：测试自动生成输出路径
+
+### 2. 存储基础模块完整测试覆盖 ✅
+
+- **新增测试文件**: `tests/test_storage_base.py`
+  - TestNewsItem 测试类（4个测试）
+    - to_dict 方法测试
+    - from_dict 方法测试
+    - from_dict 默认值测试
+    - 往返转换测试
+  - TestRSSItem 测试类（3个测试）
+    - to_dict 方法测试
+    - from_dict 方法测试
+    - from_dict 默认值测试
+  - TestRSSData 测试类（2个测试）
+    - to_dict 方法测试
+    - from_dict 方法测试
+  - TestNewsData 测试类（2个测试）
+    - to_dict 方法测试
+    - from_dict 方法测试
+  - TestConvertCrawlResultsToNewsData 测试类（3个测试）
+    - 基本转换测试
+    - 包含失败ID测试
+    - 空结果测试
+  - TestConvertNewsDataToResults 测试类（3个测试）
+    - 基本转换测试
+    - 空数据测试
+    - 多数据源测试
+
+### 3. 测试统计 ✅
+
+- **测试数量**: 从 234 个增加到 **258 个**（增长 10%）
+- **测试通过率**: **258 passed, 1 skipped** (100% 通过率)
+- **新增测试**: 24 个（7个API测试 + 17个存储基础测试）
+
+### 4. 代码覆盖率大幅提升 ✅
+
+**核心模块覆盖率改进**:
+
+- **trendradar/core/api.py**: 69.14% → **93.14%** (+24.00%) 🎉🎉🎉
+  - 显著超过80%目标，达到优秀水平
+  - 覆盖了所有主要API方法：fetch_news、analyze_news、get_hot_topics、export_html
+  - 完整的参数和返回值测试
+  - 使用Mock测试复杂场景
+
+- **trendradar/storage/base.py**: 49.77% → **68.95%** (+19.18%) 🎉🎉
+  - 超过60%目标，达到良好水平
+  - 完整覆盖数据模型：NewsItem、RSSItem、RSSData、NewsData
+  - 覆盖工具函数：convert_crawl_results_to_news_data、convert_news_data_to_results
+  - 测试了字典转换、序列化/反序列化
+
+- **总体覆盖率**: 27.19% → **28.21%** (+1.02%) 🎉
+  - 持续稳步提升
+  - 两个核心模块覆盖率显著提高
+
+### 5. 测试质量改进 ✅
+
+- **单元测试覆盖**:
+  - ✅ TrendRadarAPI.fetch_news 方法（2个测试）
+  - ✅ TrendRadarAPI.analyze_news 方法（2个测试）
+  - ✅ TrendRadarAPI.get_hot_topics 方法（1个测试）
+  - ✅ TrendRadarAPI.export_html 方法（2个测试）
+  - ✅ NewsItem 数据模型（4个测试）
+  - ✅ RSSItem 数据模型（3个测试）
+  - ✅ RSSData 数据模型（2个测试）
+  - ✅ NewsData 数据模型（2个测试）
+  - ✅ convert_crawl_results_to_news_data 函数（3个测试）
+  - ✅ convert_news_data_to_results 函数（3个测试）
+
+- **Mock 测试**:
+  - ✅ 使用 Mock 对象测试复杂场景
+  - ✅ 使用 patch 模拟外部依赖
+  - ✅ 测试快速且稳定
+
+- **数据模型测试**:
+  - ✅ 完整的序列化/反序列化测试
+  - ✅ 默认值处理测试
+  - ✅ 往返转换一致性测试
+
+### 6. 测试统计对比 ✅
+
+| 指标 | 迭代 13 | 迭代 14 | 变化 |
+|------|---------|---------|------|
+| 总测试数 | 234 | **258** | +24 (+10%) 🎉 |
+| 通过率 | 100% | 100% | 保持 ✅ |
+| core/api.py 覆盖率 | 69.14% | **93.14%** | +24.00% 🎉🎉🎉 |
+| storage/base.py 覆盖率 | 49.77% | **68.95%** | +19.18% 🎉🎉 |
+| 总体覆盖率 | 27.19% | **28.21%** | +1.02% 🎉 |
+| 核心模块类型错误 | 0 | 0 | 保持 ✅ |
+
+## 历史迭代完成内容
+
+### 迭代 13 主要成果 (2026-01-02)
 
 ### 1. 配置加载模块完整测试覆盖 ✅
 
@@ -858,10 +962,10 @@ python -m trendradar
    - [x] storage/local.py 核心方法测试 (69.45%) ✅
    - [x] core/frequency.py 测试覆盖提升 (96.40%) ✅
    - [x] core/data.py 完整测试覆盖 (99.47%) ✅
-   - [x] core/loader.py 完整测试覆盖 (99.01%) ✅✨ 迭代 13 新增
-   - [ ] 总体覆盖率提升 (当前 27.19%，目标 30%+)
-     - [ ] core/api.py (当前 69.14%，目标 80%+)
-     - [ ] storage/base.py (当前 49.77%，目标 60%+)
+   - [x] core/loader.py 完整测试覆盖 (99.01%) ✅✨ 迭代 13 完成
+   - [x] core/api.py 测试覆盖提升 (93.14%) ✅✨ 迭代 14 完成
+   - [x] storage/base.py 测试覆盖提升 (68.95%) ✅✨ 迭代 14 完成
+   - [ ] 总体覆盖率提升 (当前 28.21%，目标 30%+)
 
 2. **代码质量** ✅ (已完成核心目标)
    - [x] 核心API模块类型注解 (core/api.py)
@@ -972,6 +1076,8 @@ python -m trendradar
 13. ✅ Frequency 完整测试覆盖（96.40%）✨ 迭代 11 完成
 14. ✅ core/data.py 完整测试覆盖（99.47%）✨ 迭代 12 完成
 15. ✅ core/loader.py 完整测试覆盖（99.01%）✨ 迭代 13 完成
+16. ✅ core/api.py 测试覆盖提升（93.14%）✨ 迭代 14 完成
+17. ✅ storage/base.py 测试覆盖提升（68.95%）✨ 迭代 14 完成
 
 ### 待解决 ⏳
 
@@ -985,10 +1091,10 @@ python -m trendradar
 8. ~~core/data.py 测试覆盖~~ (迭代 12 已完成，99.47%) ✅
 9. ~~core/loader.py 测试覆盖~~ (迭代 13 已完成，99.01%) ✅
 10. 可选：修复 notification/senders.py 的 15 个类型错误（可选功能，不影响核心库）
-11. 提高测试覆盖率（总体目标 30%+，当前 27.19%）
-    - [ ] core/api.py (当前 69.14%，目标 80%+)
-    - [ ] storage/base.py (当前 49.77%，目标 60%+)
-11. 文档需要进一步完善（故障排查、最佳实践）
+11. ~~提高测试覆盖率（总体目标 30%+，当前 27.19%）~~ (持续进行中，当前 28.21%)
+    - [x] core/api.py (93.14%) ✅✨ 迭代 14 完成
+    - [x] storage/base.py (68.95%) ✅✨ 迭代 14 完成
+12. 文档需要进一步完善（故障排查、最佳实践）
 12. 错误处理可以更细致
 13. 需要添加性能基准测试
 14. CI/CD 流程待建立
