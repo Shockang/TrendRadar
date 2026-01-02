@@ -1,0 +1,7 @@
+# TrendRadar 完整依赖
+# 包含所有功能模块的依赖
+
+-r requirements-core.txt
+-r requirements-storage.txt
+-r requirements-mcp.txt
+-r requirements-dev.txt
