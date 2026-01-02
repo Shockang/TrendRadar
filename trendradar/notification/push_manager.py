@@ -51,7 +51,7 @@ class PushRecordManager:
         Returns:
             是否已推送
         """
-        return self.storage_backend.has_pushed_today()
+        return self.storage_backend.has_pushed_today()  # type: ignore[no-any-return]
 
     def record_push(self, report_type: str) -> bool:
         """
@@ -63,7 +63,7 @@ class PushRecordManager:
         Returns:
             是否记录成功
         """
-        return self.storage_backend.record_push(report_type)
+        return self.storage_backend.record_push(report_type)  # type: ignore[no-any-return]
 
     def is_in_time_range(self, start_time: str, end_time: str) -> bool:
         """

@@ -622,7 +622,7 @@ def split_content_into_batches(
     if current_batch_has_content:
         batches.append(current_batch + base_footer)
 
-    return batches
+    return batches  # type: ignore[no-any-return]
 
 
 def _process_rss_stats_section(
@@ -864,7 +864,7 @@ def _process_rss_new_titles_section(
         return current_batch, current_batch_has_content, batches
 
     # 从关键词分组中提取所有条目，重新按来源分组
-    source_map = {}
+    source_map: dict[str, list] = {}
     for stat in rss_new_stats:
         for title_data in stat.get("titles", []):
             source_name = title_data.get("source_name", "未知来源")

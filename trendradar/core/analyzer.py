@@ -8,15 +8,40 @@
 - count_word_frequency: 统计词频
 """
 
-from typing import Dict, List, Tuple, Optional, Callable
+from typing import Dict, List, Tuple, Optional, Callable, Any, TypedDict, cast
 
 from trendradar.core.frequency import matches_word_groups
 
 
+class TitleData(TypedDict, total=False):
+    """标题数据类型定义"""
+    ranks: List[int]
+    count: int
+    url: str
+    mobileUrl: str
+    first_time: str
+    last_time: str
+
+
+class WeightConfig(TypedDict, total=False):
+    """权重配置类型定义"""
+    RANK_WEIGHT: float
+    FREQUENCY_WEIGHT: float
+    HOTNESS_WEIGHT: float
+
+
+class WordGroup(TypedDict, total=False):
+    """词组配置类型定义"""
+    required: List[str]
+    normal: List[str]
+    group_key: str
+    max_count: int
+
+
 def calculate_news_weight(
-    title_data: Dict,
+    title_data: Dict[str, Any],
     rank_threshold: int,
-    weight_config: Dict,
+    weight_config: WeightConfig,
 ) -> float:
     """
     计算新闻权重，用于排序
@@ -52,12 +77,12 @@ def calculate_news_weight(
     hotness_weight = hotness_ratio * 100
 
     total_weight = (
-        rank_weight * weight_config["RANK_WEIGHT"]
-        + frequency_weight * weight_config["FREQUENCY_WEIGHT"]
-        + hotness_weight * weight_config["HOTNESS_WEIGHT"]
+        rank_weight * cast(float, weight_config.get("RANK_WEIGHT", 0.4))
+        + frequency_weight * cast(float, weight_config.get("FREQUENCY_WEIGHT", 0.3))
+        + hotness_weight * cast(float, weight_config.get("HOTNESS_WEIGHT", 0.3))
     )
 
-    return total_weight
+    return float(total_weight)
 
 
 def format_time_display(
@@ -88,22 +113,22 @@ def format_time_display(
 
 
 def count_word_frequency(
-    results: Dict,
-    word_groups: List[Dict],
+    results: Dict[str, Dict[str, Any]],
+    word_groups: List[Dict[str, Any]],
     filter_words: List[str],
-    id_to_name: Dict,
-    title_info: Optional[Dict] = None,
+    id_to_name: Dict[str, str],
+    title_info: Optional[Dict[str, Dict[str, Any]]] = None,
     rank_threshold: int = 3,
-    new_titles: Optional[Dict] = None,
+    new_titles: Optional[Dict[str, Dict[str, Any]]] = None,
     mode: str = "daily",
     global_filters: Optional[List[str]] = None,
-    weight_config: Optional[Dict] = None,
+    weight_config: Optional[WeightConfig] = None,
     max_news_per_keyword: int = 0,
     sort_by_position_first: bool = False,
     is_first_crawl_func: Optional[Callable[[], bool]] = None,
     convert_time_func: Optional[Callable[[str], str]] = None,
     quiet: bool = False,
-) -> Tuple[List[Dict], int]:
+) -> Tuple[List[Dict[str, Any]], int]:
     """
     统计词频，支持必须词、频率词、过滤词、全局过滤词，并标记新增标题
 
@@ -207,9 +232,9 @@ def count_word_frequency(
         )
         print(f"当日汇总模式：处理 {total_input_news} 条新闻，模式：{filter_status}")
 
-    word_stats = {}
+    word_stats: Dict[str, Dict[str, Any]] = {}
     total_titles = 0
-    processed_titles = {}
+    processed_titles: Dict[str, Dict[str, Any]] = {}
     matched_new_count = 0
 
     if title_info is None:
@@ -479,17 +504,17 @@ def count_word_frequency(
 
 
 def count_rss_frequency(
-    rss_items: List[Dict],
-    word_groups: List[Dict],
+    rss_items: List[Dict[str, Any]],
+    word_groups: List[Dict[str, Any]],
     filter_words: List[str],
     global_filters: Optional[List[str]] = None,
-    new_items: Optional[List[Dict]] = None,
+    new_items: Optional[List[Dict[str, Any]]] = None,
     max_news_per_keyword: int = 0,
     sort_by_position_first: bool = False,
     timezone: str = "Asia/Shanghai",
     rank_threshold: int = 5,
     quiet: bool = False,
-) -> Tuple[List[Dict], int]:
+) -> Tuple[List[Dict[str, Any]], int]:
     """
     按关键词分组统计 RSS 条目（与热榜统计格式一致）
 
@@ -554,7 +579,7 @@ def count_rss_frequency(
                 new_urls.add(item["url"])
 
     # 初始化词组统计
-    word_stats = {}
+    word_stats: Dict[str, Dict[str, Any]] = {}
     for group in word_groups:
         group_key = group["group_key"]
         word_stats[group_key] = {"count": 0, "titles": []}
@@ -691,10 +716,10 @@ def count_rss_frequency(
 
 
 def convert_keyword_stats_to_platform_stats(
-    keyword_stats: List[Dict],
-    weight_config: Dict,
+    keyword_stats: List[Dict[str, Any]],
+    weight_config: Dict[str, Any],
     rank_threshold: int = 5,
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """
     将按关键词分组的统计数据转换为按平台分组的统计数据
 
@@ -738,9 +763,9 @@ def convert_keyword_stats_to_platform_stats(
         platform_map[source_name] = sorted(
             titles,
             key=lambda x: (
-                -calculate_news_weight(x, rank_threshold, weight_config),
+                -calculate_news_weight(x, rank_threshold, cast(WeightConfig, weight_config)),
                 min(x["ranks"]) if x["ranks"] else 999,
-                -x["count"],
+                -cast(int, x["count"]),
             ),
         )
 
@@ -755,6 +780,6 @@ def convert_keyword_stats_to_platform_stats(
         })
 
     # 5. 按新闻条数排序平台
-    platform_stats.sort(key=lambda x: -x["count"])
+    platform_stats.sort(key=lambda x: -cast(int, x["count"]))
 
     return platform_stats
