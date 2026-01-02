@@ -613,5 +613,161 @@ class TestTrendRadarAPIAdvanced:
             assert html_path.endswith(".html")
 
 
+class TestTrendRadarAPICoverageEdgeCases:
+    """测试覆盖率边界情况 - 用于提升覆盖率到 35%+"""
+
+    @pytest.fixture
+    def api(self):
+        """创建 API 实例"""
+        return TrendRadarAPI(work_dir=Path(__file__).parent)
+
+    def test_analyze_news_with_keywords_parameter(self, api):
+        """测试 analyze_news 传入 keywords 参数 - 覆盖 line 248"""
+        from trendradar.storage.base import NewsData, NewsItem
+
+        mock_data = NewsData(
+            date="2026-01-02",
+            crawl_time="10:00:00",
+            items={
+                "zhihu": [
+                    NewsItem(
+                        title="人工智能技术突破",
+                        source_id="zhihu",
+                        source_name="知乎",
+                        url="http://example.com/1",
+                        rank=1,
+                        crawl_time="10:00:00"
+                    )
+                ]
+            }
+        )
+
+        api.storage.get_today_all_data = Mock(return_value=mock_data)
+
+        # Mock convert_news_data_to_results and count_word_frequency
+        with patch('trendradar.storage.convert_news_data_to_results') as mock_convert:
+            mock_convert.return_value = (
+                {"zhihu": {"人工智能技术突破": {"time": "10:00:00"}}},
+                {"zhihu": "知乎"}
+            )
+
+            with patch('trendradar.core.analyzer.count_word_frequency') as mock_count:
+                mock_count.return_value = ([{"word": "人工智能", "count": 1}], 1)
+
+                # 调用 analyze_news 并传入 keywords 参数
+                result = api.analyze_news(keywords=["人工智能", "AI"])
+
+                # 应该返回分析结果
+                assert "stats" in result
+                assert "total" in result
+                assert result["total"] == 1
+
+    def test_get_news_by_date_with_data(self, api):
+        """测试 get_news_by_date 有数据的情况 - 覆盖 line 357"""
+        from trendradar.storage.base import NewsData, NewsItem
+
+        mock_data = NewsData(
+            date="2026-01-02",
+            crawl_time="10:00:00",
+            items={
+                "zhihu": [
+                    NewsItem(
+                        title="测试标题",
+                        source_id="zhihu",
+                        source_name="知乎",
+                        url="http://example.com/1",
+                        rank=1,
+                        crawl_time="10:00:00"
+                    )
+                ]
+            }
+        )
+
+        api.storage.get_today_all_data = Mock(return_value=mock_data)
+
+        result = api.get_news_by_date("2026-01-02")
+
+        # 应该返回新闻数据字典
+        assert result is not None
+        assert "date" in result
+        assert "items" in result
+        assert result["date"] == "2026-01-02"
+
+    def test_export_html_with_news_data_parameter(self, api, tmp_path):
+        """测试 export_html 传入 news_data 参数 - 覆盖 lines 385-387"""
+        from trendradar.storage.base import NewsData, NewsItem
+
+        news_data = NewsData(
+            date="2026-01-02",
+            crawl_time="10:00:00",
+            items={
+                "zhihu": [
+                    NewsItem(
+                        title="测试标题",
+                        source_id="zhihu",
+                        source_name="知乎",
+                        url="http://example.com/1",
+                        rank=1,
+                        crawl_time="10:00:00"
+                    )
+                ]
+            }
+        )
+
+        # Mock analyze_news
+        mock_analysis = {
+            "stats": [{"word": "测试", "count": 1}],
+            "total": 1,
+            "date": "2026-01-02"
+        }
+        api.analyze_news = Mock(return_value=mock_analysis)
+
+        # Mock generate_html_report
+        with patch('trendradar.report.generator.generate_html_report') as mock_generate:
+            mock_generate.return_value = "<html>Test Report</html>"
+
+            output_path = tmp_path / "test_report.html"
+            html_path = api.export_html(news_data=news_data, output_path=str(output_path))
+
+            # 应该返回文件路径
+            assert html_path is not None
+            # 验证 analyze_news 被调用了两次（export_html内部调用时传入了news_data）
+            api.analyze_news.assert_called()
+
+    def test_fetch_news_without_platforms(self, api):
+        """测试 fetch_news 不传 platforms 参数 - 覆盖 lines 164-165"""
+        # Mock 爬虫返回数据
+        api.fetcher.crawl_websites = Mock(return_value=({}, {}, []))
+
+        # Mock 保存数据
+        api.storage.save_news_data = Mock()
+
+        # 调用 fetch_news 时不传 platforms 参数
+        news = api.fetch_news()
+
+        # 验证调用了 crawl_websites
+        api.fetcher.crawl_websites.assert_called_once()
+        call_args = api.fetcher.crawl_websites.call_args
+        platform_list = call_args[0][0]
+
+        # 应该使用配置中的默认平台列表
+        assert len(platform_list) == 3
+        assert platform_list[0] == ("zhihu", "知乎")
+        assert platform_list[1] == ("weibo", "微博")
+        assert platform_list[2] == ("baidu", "百度热搜")
+
+    def test_analyze_news_with_keywords_and_no_data(self, api):
+        """测试 analyze_news 传入 keywords 但无数据 - 覆盖 additional paths"""
+        # Mock 存储返回 None
+        api.storage.get_today_all_data = Mock(return_value=None)
+
+        # 调用 analyze_news 并传入 keywords 参数
+        result = api.analyze_news(keywords=["人工智能", "AI"])
+
+        # 应该返回错误信息
+        assert "error" in result
+        assert "没有可用的新闻数据" in result["error"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
