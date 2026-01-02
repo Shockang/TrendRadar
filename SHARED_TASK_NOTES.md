@@ -4,106 +4,142 @@
 
 将 TrendRadar 重构为简洁的 Python 库，方便集成到现有工程中，去除与核心功能无关的代码和文档。
 
-## 本次迭代完成内容 (2026-01-02 迭代 14)
+## 本次迭代完成内容 (2026-01-02 迭代 15)
 
-### 1. 核心 API 模块测试覆盖大幅提升 ✅
+### 1. 工具模块完整测试覆盖 ✅
 
-- **扩展测试文件**: `tests/test_api.py`
-  - TestTrendRadarAPIAdvanced 测试类（7个新增测试）
-    - test_fetch_news_with_platforms：测试使用指定平台抓取新闻
-    - test_fetch_news_with_custom_max_items：测试自定义最大抓取数量
-    - test_analyze_news_with_data：测试分析有数据的情况
-    - test_analyze_news_with_dict_data_error：测试字典数据错误处理
-    - test_get_hot_topics_with_stats：测试获取热点话题（有统计数据）
-    - test_export_html_with_data：测试导出HTML（有数据）
-    - test_export_html_without_output_path：测试自动生成输出路径
+- **新增测试文件**: `tests/test_utils.py` (59个测试)
+  - TestGetConfiguredTime 测试类（3个测试）
+    - 默认时区获取时间测试
+    - 自定义时区测试
+    - 无效时区回退测试
+  - TestFormatDateFolder 测试类（3个测试）
+    - 指定日期格式化测试
+    - 当前日期格式化测试
+    - 自定义时区测试
+  - TestFormatTimeFilename 测试类（2个测试）
+    - 默认时间格式测试
+    - 自定义时区测试
+  - TestGetCurrentTimeDisplay 测试类（2个测试）
+    - 默认显示格式测试
+    - 自定义时区测试
+  - TestConvertTimeForDisplay 测试类（3个测试）
+    - 有效格式转换测试
+    - 不同时间值测试
+    - 无效格式处理测试
+  - TestFormatIsoTimeFriendly 测试类（10个测试）
+    - 带时区ISO时间测试
+    - Z后缀UTC时间测试
+    - 不带时区ISO时间测试
+    - T分隔符格式测试
+    - 不包含日期测试
+    - 自定义时区测试
+    - 空字符串和None值测试
+    - 无效格式测试
+    - 带毫秒时间测试
+  - TestIsWithinDays 测试类（9个测试）
+    - 最近时间测试
+    - 旧时间测试
+    - max_days为0禁用过滤测试
+    - 负数max_days测试
+    - 空字符串和None值测试
+    - 无效格式测试
+    - 带时区时间测试
+    - UTC时间测试
+  - TestNormalizeUrl 测试类（14个测试）
+    - 空字符串和None值测试
+    - 无查询参数URL测试
+    - 微博平台参数移除测试
+    - UTM追踪参数移除测试
+    - 通用追踪参数移除测试
+    - 重要参数保留测试
+    - 参数排序测试
+    - fragment移除测试
+    - 无效URL处理测试
+    - 不指定平台ID测试
+    - 所有参数移除测试
+    - 大小写测试
+  - TestGetUrlSignature 测试类（3个测试）
+    - 基本签名生成测试
+    - 带平台ID签名测试
+    - 签名一致性测试
+  - TestPlatformConstants 测试类（2个测试）
+    - 微博平台参数配置测试
+    - 通用追踪参数测试
+  - TestTimeUtilsEdgeCases 测试类（3个测试）
+    - 时间格式一致性测试
+    - 天数边界测试
+    - 不同时区ISO时间转换测试
+  - TestUrlUtilsEdgeCases 测试类（5个测试）
+    - 多个追踪参数测试
+    - 路径和重要参数保留测试
+    - 相同内容签名测试
+    - 特殊字符URL测试
+    - 重复参数处理测试
 
-### 2. 存储基础模块完整测试覆盖 ✅
+### 2. 测试统计 ✅
 
-- **新增测试文件**: `tests/test_storage_base.py`
-  - TestNewsItem 测试类（4个测试）
-    - to_dict 方法测试
-    - from_dict 方法测试
-    - from_dict 默认值测试
-    - 往返转换测试
-  - TestRSSItem 测试类（3个测试）
-    - to_dict 方法测试
-    - from_dict 方法测试
-    - from_dict 默认值测试
-  - TestRSSData 测试类（2个测试）
-    - to_dict 方法测试
-    - from_dict 方法测试
-  - TestNewsData 测试类（2个测试）
-    - to_dict 方法测试
-    - from_dict 方法测试
-  - TestConvertCrawlResultsToNewsData 测试类（3个测试）
-    - 基本转换测试
-    - 包含失败ID测试
-    - 空结果测试
-  - TestConvertNewsDataToResults 测试类（3个测试）
-    - 基本转换测试
-    - 空数据测试
-    - 多数据源测试
+- **测试数量**: 从 258 个增加到 **317 个**（增长 23%）
+- **测试通过率**: **317 passed, 1 skipped** (100% 通过率)
+- **新增测试**: 59 个工具模块测试用例
 
-### 3. 测试统计 ✅
+### 3. 代码覆盖率大幅提升 ✅
 
-- **测试数量**: 从 234 个增加到 **258 个**（增长 10%）
-- **测试通过率**: **258 passed, 1 skipped** (100% 通过率)
-- **新增测试**: 24 个（7个API测试 + 17个存储基础测试）
+**工具模块覆盖率改进**:
 
-### 4. 代码覆盖率大幅提升 ✅
+- **trendradar/utils/time.py**: 29.01% → **78.63%** (+49.62%) 🎉🎉
+  - 接近80%目标，达到良好水平
+  - 覆盖了所有主要功能：时区处理、日期格式化、ISO时间转换、天数判断
+  - 完整的边界情况和异常处理测试
+  - 跨时区转换测试
 
-**核心模块覆盖率改进**:
+- **trendradar/utils/url.py**: 30.95% → **95.24%** (+64.29%) 🎉🎉🎉
+  - 显著超过90%目标，达到优秀水平
+  - 完整覆盖URL标准化功能：参数过滤、平台特定规则、追踪参数移除
+  - 覆盖边界情况：空值、无效URL、特殊字符、重复参数
+  - URL签名一致性测试
 
-- **trendradar/core/api.py**: 69.14% → **93.14%** (+24.00%) 🎉🎉🎉
-  - 显著超过80%目标，达到优秀水平
-  - 覆盖了所有主要API方法：fetch_news、analyze_news、get_hot_topics、export_html
-  - 完整的参数和返回值测试
-  - 使用Mock测试复杂场景
+- **总体覆盖率**: 28.21% → **29.33%** (+1.12%) 🎉
+  - 持续稳步提升，接近30%目标
+  - 两个核心工具模块覆盖率显著提高
 
-- **trendradar/storage/base.py**: 49.77% → **68.95%** (+19.18%) 🎉🎉
-  - 超过60%目标，达到良好水平
-  - 完整覆盖数据模型：NewsItem、RSSItem、RSSData、NewsData
-  - 覆盖工具函数：convert_crawl_results_to_news_data、convert_news_data_to_results
-  - 测试了字典转换、序列化/反序列化
+### 4. 测试质量改进 ✅
 
-- **总体覆盖率**: 27.19% → **28.21%** (+1.02%) 🎉
-  - 持续稳步提升
-  - 两个核心模块覆盖率显著提高
+- **时间工具测试**:
+  - ✅ get_configured_time 函数（3个测试）
+  - ✅ format_date_folder 函数（3个测试）
+  - ✅ format_time_filename 函数（2个测试）
+  - ✅ get_current_time_display 函数（2个测试）
+  - ✅ convert_time_for_display 函数（3个测试）
+  - ✅ format_iso_time_friendly 函数（10个测试）
+  - ✅ is_within_days 函数（9个测试）
 
-### 5. 测试质量改进 ✅
+- **URL工具测试**:
+  - ✅ normalize_url 函数（14个测试）
+  - ✅ get_url_signature 函数（3个测试）
+  - ✅ 平台参数配置测试（2个测试）
 
-- **单元测试覆盖**:
-  - ✅ TrendRadarAPI.fetch_news 方法（2个测试）
-  - ✅ TrendRadarAPI.analyze_news 方法（2个测试）
-  - ✅ TrendRadarAPI.get_hot_topics 方法（1个测试）
-  - ✅ TrendRadarAPI.export_html 方法（2个测试）
-  - ✅ NewsItem 数据模型（4个测试）
-  - ✅ RSSItem 数据模型（3个测试）
-  - ✅ RSSData 数据模型（2个测试）
-  - ✅ NewsData 数据模型（2个测试）
-  - ✅ convert_crawl_results_to_news_data 函数（3个测试）
-  - ✅ convert_news_data_to_results 函数（3个测试）
+- **边界情况测试**:
+  - ✅ 空值处理（None、空字符串）
+  - ✅ 无效时区和URL处理
+  - ✅ 时区转换边界测试
+  - ✅ URL特殊字符和重复参数
+  - ✅ 不同时间格式兼容性
 
-- **Mock 测试**:
-  - ✅ 使用 Mock 对象测试复杂场景
-  - ✅ 使用 patch 模拟外部依赖
-  - ✅ 测试快速且稳定
+- **集成测试**:
+  - ✅ 时间格式一致性测试
+  - ✅ URL签名一致性测试
+  - ✅ 跨时区功能测试
 
-- **数据模型测试**:
-  - ✅ 完整的序列化/反序列化测试
-  - ✅ 默认值处理测试
-  - ✅ 往返转换一致性测试
+### 5. 测试统计对比 ✅
 
-### 6. 测试统计对比 ✅
-
-| 指标 | 迭代 13 | 迭代 14 | 变化 |
+| 指标 | 迭代 14 | 迭代 15 | 变化 |
 |------|---------|---------|------|
-| 总测试数 | 234 | **258** | +24 (+10%) 🎉 |
+| 总测试数 | 258 | **317** | +59 (+23%) 🎉 |
 | 通过率 | 100% | 100% | 保持 ✅ |
-| core/api.py 覆盖率 | 69.14% | **93.14%** | +24.00% 🎉🎉🎉 |
-| storage/base.py 覆盖率 | 49.77% | **68.95%** | +19.18% 🎉🎉 |
-| 总体覆盖率 | 27.19% | **28.21%** | +1.02% 🎉 |
+| utils/time.py 覆盖率 | 29.01% | **78.63%** | +49.62% 🎉🎉 |
+| utils/url.py 覆盖率 | 30.95% | **95.24%** | +64.29% 🎉🎉🎉 |
+| 总体覆盖率 | 28.21% | **29.33%** | +1.12% 🎉 |
 | 核心模块类型错误 | 0 | 0 | 保持 ✅ |
 
 ## 历史迭代完成内容
@@ -965,7 +1001,9 @@ python -m trendradar
    - [x] core/loader.py 完整测试覆盖 (99.01%) ✅✨ 迭代 13 完成
    - [x] core/api.py 测试覆盖提升 (93.14%) ✅✨ 迭代 14 完成
    - [x] storage/base.py 测试覆盖提升 (68.95%) ✅✨ 迭代 14 完成
-   - [ ] 总体覆盖率提升 (当前 28.21%，目标 30%+)
+   - [x] utils/time.py 测试覆盖提升 (78.63%) ✅✨ 迭代 15 完成
+   - [x] utils/url.py 测试覆盖提升 (95.24%) ✅✨ 迭代 15 完成
+   - [ ] 总体覆盖率提升 (当前 29.33%，目标 30%+)
 
 2. **代码质量** ✅ (已完成核心目标)
    - [x] 核心API模块类型注解 (core/api.py)
@@ -1078,6 +1116,8 @@ python -m trendradar
 15. ✅ core/loader.py 完整测试覆盖（99.01%）✨ 迭代 13 完成
 16. ✅ core/api.py 测试覆盖提升（93.14%）✨ 迭代 14 完成
 17. ✅ storage/base.py 测试覆盖提升（68.95%）✨ 迭代 14 完成
+18. ✅ utils/time.py 测试覆盖提升（78.63%）✨ 迭代 15 完成
+19. ✅ utils/url.py 测试覆盖提升（95.24%）✨ 迭代 15 完成
 
 ### 待解决 ⏳
 
@@ -1091,9 +1131,11 @@ python -m trendradar
 8. ~~core/data.py 测试覆盖~~ (迭代 12 已完成，99.47%) ✅
 9. ~~core/loader.py 测试覆盖~~ (迭代 13 已完成，99.01%) ✅
 10. 可选：修复 notification/senders.py 的 15 个类型错误（可选功能，不影响核心库）
-11. ~~提高测试覆盖率（总体目标 30%+，当前 27.19%）~~ (持续进行中，当前 28.21%)
+11. ~~提高测试覆盖率（总体目标 30%+，当前 27.19%）~~ (持续进行中，当前 29.33%)
     - [x] core/api.py (93.14%) ✅✨ 迭代 14 完成
     - [x] storage/base.py (68.95%) ✅✨ 迭代 14 完成
+    - [x] utils/time.py (78.63%) ✅✨ 迭代 15 完成
+    - [x] utils/url.py (95.24%) ✅✨ 迭代 15 完成
 12. 文档需要进一步完善（故障排查、最佳实践）
 12. 错误处理可以更细致
 13. 需要添加性能基准测试
