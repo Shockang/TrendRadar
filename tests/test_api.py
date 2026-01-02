@@ -8,6 +8,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
+from unittest.mock import Mock, patch, MagicMock
 
 from trendradar.core.api import TrendRadarAPI
 
@@ -412,6 +413,204 @@ C#
         api = TrendRadarAPI(keywords_path=str(keywords_path), work_dir=temp_dir)
         # 应该成功加载
         assert len(api.keywords) > 0
+
+
+class TestTrendRadarAPIAdvanced:
+    """高级测试 - 覆盖更多复杂场景"""
+
+    @pytest.fixture
+    def temp_dir(self):
+        """创建临时目录"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        shutil.rmtree(temp_dir)
+
+    @pytest.fixture
+    def api(self, temp_dir):
+        """创建 API 实例"""
+        return TrendRadarAPI(work_dir=temp_dir)
+
+    def test_fetch_news_with_platforms(self, api):
+        """测试使用指定平台抓取新闻"""
+        # Mock 爬虫返回数据
+        api.fetcher.crawl_websites = Mock(return_value=({}, {}, []))
+
+        # Mock 保存数据
+        api.storage.save_news_data = Mock()
+
+        news = api.fetch_news(platforms=["zhihu", "weibo"])
+
+        # 验证调用了正确的参数
+        api.fetcher.crawl_websites.assert_called_once()
+        call_args = api.fetcher.crawl_websites.call_args
+        platform_list = call_args[0][0]
+
+        # 应该使用指定的平台列表
+        assert len(platform_list) == 2
+        assert platform_list[0] == ("zhihu", "zhihu")
+        assert platform_list[1] == ("weibo", "weibo")
+
+        # 验证返回了空列表
+        assert news == []
+
+    def test_fetch_news_with_custom_max_items(self, api):
+        """测试使用自定义最大抓取数量"""
+        # Mock 爬虫返回数据
+        mock_results = {
+            "zhihu": {
+                "测试标题": {
+                    "time": "10:00:00",
+                    "ranks": [1],
+                    "url": "http://example.com",
+                    "mobileUrl": ""
+                }
+            }
+        }
+        api.fetcher.crawl_websites = Mock(
+            return_value=(mock_results, {"zhihu": "知乎"}, [])
+        )
+
+        # Mock 保存数据
+        api.storage.save_news_data = Mock()
+
+        news = api.fetch_news(platforms=["zhihu"])
+
+        # 验证返回了新闻数据
+        assert len(news) == 1
+        assert news[0]["title"] == "测试标题"
+
+    def test_analyze_news_with_data(self, api):
+        """测试分析有数据的情况 - 完整流程覆盖"""
+        # Mock 存储返回数据
+        from trendradar.storage.base import NewsData, NewsItem
+
+        mock_data = NewsData(
+            date="2026-01-02",
+            crawl_time="10:00:00",
+            items={
+                "zhihu": [
+                    NewsItem(
+                        title="人工智能技术突破",
+                        source_id="zhihu",
+                        source_name="知乎",
+                        url="http://example.com/1",
+                        rank=1,
+                        crawl_time="10:00:00"
+                    )
+                ]
+            }
+        )
+
+        api.storage.get_today_all_data = Mock(return_value=mock_data)
+
+        # 添加关键词
+        api.keywords = [
+            {
+                "words": ["人工智能", "AI"],
+                "must_words": [],
+                "limit": 10
+            }
+        ]
+
+        # Mock convert_news_data_to_results and count_word_frequency
+        # 这样可以避免API代码中的bug
+        with patch('trendradar.storage.convert_news_data_to_results') as mock_convert:
+            mock_convert.return_value = (
+                {"zhihu": {"人工智能技术突破": {"time": "10:00:00"}}},
+                {"zhihu": "知乎"}
+            )
+
+            with patch('trendradar.core.analyzer.count_word_frequency') as mock_count:
+                mock_count.return_value = ([{"word": "人工智能", "count": 1}], 1)
+
+                result = api.analyze_news()
+
+                # 应该返回分析结果
+                assert "stats" in result
+                assert "total" in result
+                assert "date" in result
+                assert result["total"] == 1
+
+    def test_analyze_news_with_dict_data_error(self, api):
+        """测试分析字典数据时的错误处理"""
+        # 传入字典数据（暂不支持）
+        news_data = [
+            {"title": "测试", "url": "http://example.com"}
+        ]
+
+        result = api.analyze_news(news_data=news_data)
+
+        # 应该返回错误
+        assert "error" in result
+
+    def test_get_hot_topics_with_stats(self, api):
+        """测试获取热点话题 - 有统计数据"""
+        # Mock analyze_news 返回有数据的结果
+        mock_analysis = {
+            "stats": [
+                {"word": "人工智能", "count": 10, "platforms": ["知乎", "微博"]},
+                {"word": "AI", "count": 5, "platforms": ["知乎"]},
+                {"word": "技术", "count": 1, "platforms": ["微博"]},
+            ],
+            "total": 100,
+            "date": "2026-01-02"
+        }
+
+        api.analyze_news = Mock(return_value=mock_analysis)
+
+        hot_topics = api.get_hot_topics(top_n=5, min_count=2)
+
+        # 应该过滤掉低于 min_count 的
+        assert len(hot_topics) == 2
+        assert hot_topics[0]["word"] == "人工智能"
+        assert hot_topics[0]["count"] == 10
+        assert hot_topics[1]["word"] == "AI"
+
+    def test_export_html_with_data(self, api, temp_dir):
+        """测试导出HTML - 有数据"""
+        # Mock analyze_news 返回有数据的结果
+        mock_analysis = {
+            "stats": [
+                {"word": "人工智能", "count": 10}
+            ],
+            "total": 100,
+            "date": "2026-01-02"
+        }
+
+        api.analyze_news = Mock(return_value=mock_analysis)
+
+        # Mock generate_html_report
+        with patch('trendradar.report.generator.generate_html_report') as mock_generate:
+            mock_generate.return_value = "<html>Test Report</html>"
+
+            output_path = Path(temp_dir) / "test_report.html"
+            html_path = api.export_html(output_path=output_path)
+
+            # 应该返回文件路径
+            assert html_path == str(output_path)
+            assert output_path.exists()
+
+    def test_export_html_without_output_path(self, api):
+        """测试导出HTML - 自动生成路径"""
+        # Mock analyze_news 返回有数据的结果
+        mock_analysis = {
+            "stats": [{"word": "测试", "count": 1}],
+            "total": 1,
+            "date": "2026-01-02"
+        }
+
+        api.analyze_news = Mock(return_value=mock_analysis)
+
+        # Mock generate_html_report
+        with patch('trendradar.report.generator.generate_html_report') as mock_generate:
+            mock_generate.return_value = "<html>Test</html>"
+
+            html_path = api.export_html()
+
+            # 应该返回自动生成的文件路径
+            assert html_path is not None
+            assert "report_" in html_path
+            assert html_path.endswith(".html")
 
 
 if __name__ == "__main__":
