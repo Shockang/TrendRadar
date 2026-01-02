@@ -845,3 +845,296 @@ class TestConvertKeywordStatsToPlatformStats:
         assert platform_stats[0]["count"] == 3
         assert platform_stats[1]["word"] == "Hacker News"
         assert platform_stats[1]["count"] == 2
+
+
+class TestCountWordFrequencyCurrentMode:
+    """count_word_frequency 函数 current 模式测试类"""
+
+    @pytest.fixture
+    def sample_results(self) -> Dict[str, Dict[str, Any]]:
+        """创建示例抓取结果"""
+        return {
+            "hackernews": {
+                "AI breakthrough": {
+                    "ranks": [1, 2],
+                    "count": 2,
+                    "url": "https://example.com/ai",
+                    "mobileUrl": "",
+                },
+                "New Python release": {
+                    "ranks": [3],
+                    "count": 1,
+                    "url": "https://example.com/python",
+                    "mobileUrl": "",
+                },
+            },
+            "reddit": {
+                "AI breakthrough": {
+                    "ranks": [1],
+                    "count": 1,
+                    "url": "https://reddit.com/ai",
+                    "mobileUrl": "",
+                },
+            },
+        }
+
+    @pytest.fixture
+    def title_info_with_times(self) -> Dict[str, Dict[str, Any]]:
+        """创建带时间信息的标题数据"""
+        return {
+            "hackernews": {
+                "AI breakthrough": {
+                    "first_time": "08-00",
+                    "last_time": "10-00",
+                    "count": 5,
+                    "ranks": [1, 2, 3],
+                },
+                "New Python release": {
+                    "first_time": "09-00",
+                    "last_time": "09-00",
+                    "count": 1,
+                    "ranks": [3],
+                },
+            },
+            "reddit": {
+                "AI breakthrough": {
+                    "first_time": "10-00",
+                    "last_time": "10-00",
+                    "count": 1,
+                    "ranks": [1],
+                },
+            },
+        }
+
+    def test_count_frequency_current_mode_with_latest_time(
+        self, sample_results, title_info_with_times, capsys
+    ):
+        """测试 current 模式 - 有最新时间"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News", "reddit": "Reddit"}
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            mode="current",
+            title_info=title_info_with_times,
+            quiet=False,
+        )
+
+        captured = capsys.readouterr()
+        # 应该打印当前榜单模式的过滤信息
+        assert "当前榜单模式" in captured.out
+        assert "最新时间 10-00" in captured.out
+        # 应该只处理 last_time 等于最新时间的新闻
+        assert total == 2  # AI breakthrough 在两个平台都是 10-00
+
+    def test_count_frequency_current_mode_without_title_info(
+        self, sample_results, capsys
+    ):
+        """测试 current 模式 - 无 title_info"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News", "reddit": "Reddit"}
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            mode="current",
+            title_info=None,
+            quiet=True,
+        )
+
+        # 无 title_info 时应该处理所有新闻
+        assert total == 3  # 所有新闻都被处理（包括不匹配的）
+
+    def test_count_frequency_current_mode_without_latest_time(
+        self, sample_results, capsys
+    ):
+        """测试 current 模式 - 无最新时间"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News", "reddit": "Reddit"}
+        # 创建空的 last_time 的 title_info
+        title_info = {
+            "hackernews": {
+                "AI breakthrough": {
+                    "first_time": "08-00",
+                    "last_time": "",  # 空的 last_time
+                    "count": 5,
+                    "ranks": [1, 2],
+                },
+            },
+            "reddit": {
+                "AI breakthrough": {
+                    "first_time": "10-00",
+                    "last_time": "",  # 空的 last_time
+                    "count": 1,
+                    "ranks": [1],
+                },
+            },
+        }
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            mode="current",
+            title_info=title_info,
+            quiet=True,
+        )
+
+        # 无最新时间时应该处理所有新闻
+        assert total == 3  # 所有新闻都被处理
+
+    def test_count_frequency_current_mode_empty_title_info(
+        self, sample_results
+    ):
+        """测试 current 模式 - 空 title_info"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News", "reddit": "Reddit"}
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            mode="current",
+            title_info={},  # 空字典
+            quiet=True,
+        )
+
+        # 空 title_info 时应该处理所有新闻
+        assert total == 3  # 所有新闻都被处理
+
+
+class TestCountWordFrequencyEdgeCases:
+    """count_word_frequency 函数边界情况测试类"""
+
+    @pytest.fixture
+    def sample_results(self) -> Dict[str, Dict[str, Any]]:
+        """创建示例抓取结果"""
+        return {
+            "hackernews": {
+                "AI breakthrough": {
+                    "ranks": [1, 2],
+                    "count": 2,
+                    "url": "https://example.com/ai",
+                    "mobileUrl": "",
+                },
+            },
+        }
+
+    def test_count_frequency_duplicate_titles(self, sample_results):
+        """测试重复标题处理（相同标题在同一平台）"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News"}
+
+        # 第一次处理
+        stats1, total1 = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            quiet=True,
+        )
+
+        # 验证结果
+        assert total1 == 1
+        assert len(stats1) == 1
+        assert stats1[0]["count"] == 1
+
+    def test_count_frequency_with_weight_config(self, sample_results):
+        """测试自定义权重配置"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News"}
+        custom_weight_config = {
+            "RANK_WEIGHT": 0.5,
+            "FREQUENCY_WEIGHT": 0.5,
+            "HOTNESS_WEIGHT": 0.0,
+        }
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            weight_config=custom_weight_config,
+            quiet=True,
+        )
+
+        # 应该使用自定义权重配置计算
+        assert total == 1
+        assert len(stats[0]["titles"]) == 1
+
+    def test_count_frequency_incremental_mode_with_empty_new_titles(
+        self, sample_results, capsys
+    ):
+        """测试增量模式 - 空 new_titles"""
+        word_groups = [
+            {
+                "required": [],
+                "normal": ["AI"],
+                "group_key": "AI",
+            }
+        ]
+        id_to_name = {"hackernews": "Hacker News"}
+
+        stats, total = count_word_frequency(
+            results=sample_results,
+            word_groups=word_groups,
+            filter_words=[],
+            id_to_name=id_to_name,
+            mode="incremental",
+            is_first_crawl_func=lambda: False,  # 非首次爬取
+            new_titles={},  # 空的新增标题
+            quiet=False,
+        )
+
+        captured = capsys.readouterr()
+        # 应该显示处理空 new_titles 的消息
+        assert "增量模式" in captured.out
+        # 空 new_titles 应该导致 total 为 0
+        assert total == 0
+        # stats 仍然包含词组，但 count 为 0，titles 为空
+        assert len(stats) == 1
+        assert stats[0]["count"] == 0
+        assert len(stats[0]["titles"]) == 0
