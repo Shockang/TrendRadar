@@ -77,9 +77,9 @@ def calculate_news_weight(
     hotness_weight = hotness_ratio * 100
 
     total_weight = (
-        rank_weight * cast(float, weight_config.get("RANK_WEIGHT", 0.4))
-        + frequency_weight * cast(float, weight_config.get("FREQUENCY_WEIGHT", 0.3))
-        + hotness_weight * cast(float, weight_config.get("HOTNESS_WEIGHT", 0.3))
+        rank_weight * weight_config.get("RANK_WEIGHT", 0.4)
+        + frequency_weight * weight_config.get("FREQUENCY_WEIGHT", 0.3)
+        + hotness_weight * weight_config.get("HOTNESS_WEIGHT", 0.3)
     )
 
     return float(total_weight)

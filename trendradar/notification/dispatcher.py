@@ -445,6 +445,10 @@ class NotificationDispatcher:
         html_file_path: Optional[str],
     ) -> bool:
         """发送邮件（保持原有逻辑，已支持多收件人）"""
+        if html_file_path is None:
+            print(f"HTML文件路径为空，跳过邮件发送")
+            return False
+
         return send_to_email(
             from_email=self.config["EMAIL_FROM"],
             password=self.config["EMAIL_PASSWORD"],

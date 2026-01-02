@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 
+from trendradar.core.analyzer import WeightConfig
+
 from trendradar.utils.time import (
     get_configured_time,
     format_date_folder,
@@ -38,7 +40,7 @@ from trendradar.notification import (
     NotificationDispatcher,
     PushRecordManager,
 )
-from trendradar.storage import get_storage_manager
+from trendradar.storage import StorageManager, get_storage_manager
 
 
 class AppContext:
@@ -71,7 +73,7 @@ class AppContext:
             config: 完整的配置字典
         """
         self.config = config
-        self._storage_manager = None
+        self._storage_manager: Optional[StorageManager] = None
 
     # === 配置访问 ===
 
@@ -86,9 +88,9 @@ class AppContext:
         return int(self.config.get("RANK_THRESHOLD", 50))
 
     @property
-    def weight_config(self) -> Dict:
+    def weight_config(self) -> Optional[WeightConfig]:
         """获取权重配置"""
-        return cast(Dict, self.config.get("WEIGHT_CONFIG", {}))
+        return cast(Optional[WeightConfig], self.config.get("WEIGHT_CONFIG"))
 
     @property
     def platforms(self) -> List[Dict]:
@@ -145,7 +147,7 @@ class AppContext:
 
     # === 存储操作 ===
 
-    def get_storage_manager(self):
+    def get_storage_manager(self) -> StorageManager:
         """获取存储管理器（延迟初始化，单例）"""
         if self._storage_manager is None:
             storage_config = self.config.get("STORAGE", {})

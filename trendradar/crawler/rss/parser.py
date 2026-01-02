@@ -277,7 +277,7 @@ class RSSParser:
         if date_str:
             try:
                 dt = parsedate_to_datetime(date_str)
-                return dt.isoformat()
+                return dt.isoformat()  # type: ignore[no-any-return]
             except (ValueError, TypeError):
                 pass
 
