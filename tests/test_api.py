@@ -227,5 +227,192 @@ class TestTrendRadarAPIIntegration:
         assert Path(html_path).exists()
 
 
+class TestTrendRadarAPIExtended:
+    """扩展测试 - 覆盖更多代码路径"""
+
+    @pytest.fixture
+    def temp_dir(self):
+        """创建临时目录"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        shutil.rmtree(temp_dir)
+
+    @pytest.fixture
+    def api(self, temp_dir):
+        """创建 API 实例"""
+        return TrendRadarAPI(work_dir=temp_dir)
+
+    def test_init_with_default_config_file(self, temp_dir):
+        """测试使用默认配置文件路径初始化"""
+        # 创建默认配置文件
+        config_content = """
+platforms:
+  - id: test
+    name: 测试平台
+"""
+        config_path = Path(temp_dir) / "config.yaml"
+        config_path.write_text(config_content, encoding="utf-8")
+
+        # 不指定 config_path，应该自动加载 work_dir/config.yaml
+        api = TrendRadarAPI(work_dir=temp_dir)
+        assert "PLATFORMS" in api.config
+        assert len(api.config["PLATFORMS"]) == 1
+
+    def test_load_keywords_with_default_path(self, temp_dir):
+        """测试使用默认关键词文件路径"""
+        # 创建默认关键词文件
+        keywords_content = """# 测试关键词
+测试
+人工智能
+"""
+        keywords_path = Path(temp_dir) / "frequency_words.txt"
+        keywords_path.write_text(keywords_content, encoding="utf-8")
+
+        # 不指定 keywords_path，应该自动加载
+        api = TrendRadarAPI(work_dir=temp_dir)
+        assert len(api.keywords) > 0
+
+    def test_load_keywords_invalid_path(self, temp_dir):
+        """测试加载不存在的关键词文件"""
+        # 指定不存在的路径，不应该报错
+        api = TrendRadarAPI(
+            keywords_path=str(Path(temp_dir) / "nonexistent.txt"),
+            work_dir=temp_dir
+        )
+        # 应该有默认的空列表
+        assert api.keywords == []
+        assert api.filter_words == []
+
+    def test_init_components_with_proxy(self, temp_dir):
+        """测试使用代理初始化组件"""
+        config_content = """
+platforms:
+  - id: test
+    name: 测试
+
+storage:
+  backend: local
+  data_dir: output
+
+use_proxy: true
+default_proxy: http://proxy.example.com:8080
+"""
+        config_path = Path(temp_dir) / "config.yaml"
+        config_path.write_text(config_content, encoding="utf-8")
+
+        api = TrendRadarAPI(config_path=str(config_path), work_dir=temp_dir)
+        assert api.fetcher is not None
+        assert api.storage is not None
+
+    def test_init_components_custom_timezone(self, temp_dir):
+        """测试自定义时区初始化"""
+        config_content = """
+platforms:
+  - id: test
+    name: 测试
+
+app:
+  timezone: America/New_York
+"""
+        config_path = Path(temp_dir) / "config.yaml"
+        config_path.write_text(config_content, encoding="utf-8")
+
+        api = TrendRadarAPI(config_path=str(config_path), work_dir=temp_dir)
+        assert api.timezone == "America/New_York"
+
+    def test_filter_by_keywords_default_match_type(self, api):
+        """测试关键词过滤 - 默认匹配类型"""
+        news_data = [
+            {"title": "人工智能技术", "url": "http://example.com/1"},
+            {"title": "机器学习", "url": "http://example.com/2"},
+        ]
+
+        keywords = ["人工智能"]
+        # 默认应该是 "any" 匹配
+        filtered = api.filter_by_keywords(news_data, keywords)
+
+        assert len(filtered) == 1
+        assert filtered[0]["title"] == "人工智能技术"
+
+    def test_filter_by_keywords_with_url(self, api):
+        """测试关键词过滤 - 包含URL"""
+        news_data = [
+            {"title": "AI新闻", "url": "http://example.com/ai"},
+            {"title": "科技新闻", "url": "http://example.com/tech"},
+        ]
+
+        keywords = ["AI"]
+        filtered = api.filter_by_keywords(news_data, keywords)
+
+        # 标题匹配
+        assert len(filtered) == 1
+        assert "AI" in filtered[0]["title"]
+
+
+class TestTrendRadarAPIEdgeCases:
+    """边界情况测试"""
+
+    @pytest.fixture
+    def temp_dir(self):
+        """创建临时目录"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        shutil.rmtree(temp_dir)
+
+    @pytest.fixture
+    def api(self, temp_dir):
+        """创建 API 实例"""
+        return TrendRadarAPI(work_dir=temp_dir)
+
+    def test_empty_news_list_filter(self, api):
+        """测试空新闻列表过滤"""
+        news_data = []
+        keywords = ["测试"]
+        filtered = api.filter_by_keywords(news_data, keywords)
+
+        assert len(filtered) == 0
+
+    def test_filter_with_empty_keywords(self, api):
+        """测试空关键词列表"""
+        news_data = [
+            {"title": "测试新闻", "url": "http://example.com/1"}
+        ]
+
+        keywords = []
+        filtered = api.filter_by_keywords(news_data, keywords)
+
+        # 空关键词时，matches_word_groups 返回 True，所以返回所有新闻
+        assert len(filtered) == 1
+        assert filtered[0]["title"] == "测试新闻"
+
+    def test_get_news_by_date_invalid_format(self, api):
+        """测试无效日期格式"""
+        # 应该优雅处理无效格式
+        news = api.get_news_by_date("invalid-date")
+        assert news is None
+
+    def test_get_news_by_date_future_date(self, api):
+        """测试未来日期"""
+        # 未来日期应该返回 None 或空列表
+        from datetime import timedelta
+        future_date = (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d")
+        news = api.get_news_by_date(future_date)
+        assert news is None
+
+    def test_keywords_with_special_chars(self, temp_dir):
+        """测试包含特殊字符的关键词"""
+        keywords_content = """# 特殊字符测试
+C++
+C#
+.NET
+"""
+        keywords_path = Path(temp_dir) / "keywords.txt"
+        keywords_path.write_text(keywords_content, encoding="utf-8")
+
+        api = TrendRadarAPI(keywords_path=str(keywords_path), work_dir=temp_dir)
+        # 应该成功加载
+        assert len(api.keywords) > 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
