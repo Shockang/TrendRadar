@@ -38,21 +38,36 @@ setup(
     ],
     python_requires=">=3.10",
     install_requires=[
+        # 核心依赖
         "requests>=2.32.5,<3.0.0",
         "pytz>=2025.2,<2026.0",
         "PyYAML>=6.0.3,<7.0.0",
-        "boto3>=1.35.0,<2.0.0",
         "feedparser>=6.0.0,<7.0.0",
     ],
     extras_require={
+        # 开发依赖
         "dev": [
             "pytest>=7.0.0",
+            "pytest-cov>=4.0.0",
             "black>=22.0.0",
             "flake8>=4.0.0",
+            "pylint>=2.12.0",
+            "mypy>=1.0.0",
         ],
+        # MCP 服务依赖
         "mcp": [
             "fastmcp>=2.12.0,<2.14.0",
             "websockets>=13.0,<14.0",
+        ],
+        # 云存储依赖
+        "storage": [
+            "boto3>=1.35.0,<2.0.0",
+        ],
+        # 完整功能（包含所有可选依赖）
+        "all": [
+            "fastmcp>=2.12.0,<2.14.0",
+            "websockets>=13.0,<14.0",
+            "boto3>=1.35.0,<2.0.0",
         ],
     },
     entry_points={

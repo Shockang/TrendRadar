@@ -6,7 +6,7 @@ TrendRadar 核心API
 """
 
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any, Union
 from datetime import datetime
 
 
@@ -64,7 +64,7 @@ class TrendRadarAPI:
         # 初始化核心组件
         self._init_components()
 
-    def _get_default_config(self) -> Dict:
+    def _get_default_config(self) -> Dict[str, Any]:
         """获取默认配置"""
         return {
             "PLATFORMS": [
@@ -139,7 +139,7 @@ class TrendRadarAPI:
         self,
         platforms: Optional[List[str]] = None,
         max_items: Optional[int] = None
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         抓取热点新闻
 
@@ -179,9 +179,9 @@ class TrendRadarAPI:
 
     def analyze_news(
         self,
-        news_data: Optional[List[Dict]] = None,
+        news_data: Optional[List[Dict[str, Any]]] = None,
         keywords: Optional[List[str]] = None
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """
         分析新闻数据
 
@@ -248,10 +248,10 @@ class TrendRadarAPI:
 
     def filter_by_keywords(
         self,
-        news_data: List[Dict],
+        news_data: List[Dict[str, Any]],
         keywords: List[str],
         match_type: str = "any"
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         按关键词过滤新闻
 
@@ -279,7 +279,7 @@ class TrendRadarAPI:
         self,
         top_n: int = 10,
         min_count: int = 2
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         获取热点话题
 
@@ -313,7 +313,7 @@ class TrendRadarAPI:
     def get_news_by_date(
         self,
         date: str
-    ) -> Optional[List[Dict]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         """
         获取指定日期的新闻
 
@@ -327,8 +327,8 @@ class TrendRadarAPI:
 
     def export_html(
         self,
-        news_data: Optional[List[Dict]] = None,
-        output_path: Optional[str] = None
+        news_data: Optional[List[Dict[str, Any]]] = None,
+        output_path: Optional[Union[str, Path]] = None
     ) -> Optional[str]:
         """
         导出HTML报告
