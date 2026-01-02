@@ -103,9 +103,9 @@ def read_all_today_titles_from_storage(
         if not news_data or not news_data.items:
             return {}, {}, {}
 
-        all_results = {}
-        final_id_to_name = {}
-        title_info = {}
+        all_results: dict[str, dict[str, dict]] = {}
+        final_id_to_name: dict[str, str] = {}
+        title_info: dict[str, dict[str, dict]] = {}
 
         for source_id, news_list in news_data.items.items():
             # 按平台过滤
@@ -209,7 +209,7 @@ def detect_latest_new_titles_from_storage(
         latest_time = latest_data.crawl_time
 
         # 步骤1：收集最新批次的标题（last_crawl_time = latest_time 的标题）
-        latest_titles = {}
+        latest_titles: dict[str, dict[str, dict]] = {}
         for source_id, news_list in latest_data.items.items():
             if current_platform_ids is not None and source_id not in current_platform_ids:
                 continue
@@ -224,7 +224,7 @@ def detect_latest_new_titles_from_storage(
         # 步骤2：收集历史标题
         # 关键逻辑：一个标题只要其 first_crawl_time < latest_time，就是历史标题
         # 这样即使同一标题有多条记录（URL 不同），只要任何一条是历史的，该标题就算历史
-        historical_titles = {}
+        historical_titles: dict[str, set[str]] = {}
         for source_id, news_list in all_data.items.items():
             if current_platform_ids is not None and source_id not in current_platform_ids:
                 continue
