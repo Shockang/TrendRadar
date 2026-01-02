@@ -535,8 +535,8 @@ def convert_news_data_to_results(data: NewsData) -> tuple:
     Returns:
         (results, id_to_name, title_info) 元组
     """
-    results = {}
-    title_info = {}
+    results: dict[str, dict[str, dict]] = {}
+    title_info: dict[str, dict[str, dict]] = {}
 
     for source_id, news_list in data.items.items():
         results[source_id] = {}

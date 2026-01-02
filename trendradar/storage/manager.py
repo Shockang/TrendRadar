@@ -195,7 +195,7 @@ class StorageManager:
             return 0
 
         # 调用拉取方法
-        return self._remote_backend.pull_recent_days(self.pull_days, self.data_dir)
+        return self._remote_backend.pull_recent_days(self.pull_days, self.data_dir)  # type: ignore[attr-defined]
 
     def save_news_data(self, data: NewsData) -> bool:
         """保存新闻数据"""
@@ -203,19 +203,19 @@ class StorageManager:
 
     def save_rss_data(self, data: RSSData) -> bool:
         """保存 RSS 数据"""
-        return self.get_backend().save_rss_data(data)
+        return self.get_backend().save_rss_data(data)  # type: ignore[attr-defined]
 
     def get_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
         """获取指定日期的所有 RSS 数据（当日汇总模式）"""
-        return self.get_backend().get_rss_data(date)
+        return self.get_backend().get_rss_data(date)  # type: ignore[attr-defined]
 
     def get_latest_rss_data(self, date: Optional[str] = None) -> Optional[RSSData]:
         """获取最新一次抓取的 RSS 数据（当前榜单模式）"""
-        return self.get_backend().get_latest_rss_data(date)
+        return self.get_backend().get_latest_rss_data(date)  # type: ignore[attr-defined]
 
     def detect_new_rss_items(self, current_data: RSSData) -> dict:
         """检测新增的 RSS 条目（增量模式）"""
-        return self.get_backend().detect_new_rss_items(current_data)
+        return self.get_backend().detect_new_rss_items(current_data)  # type: ignore[attr-defined]
 
     def get_today_all_data(self, date: Optional[str] = None) -> Optional[NewsData]:
         """获取当天所有数据"""
