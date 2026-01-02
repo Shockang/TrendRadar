@@ -37,12 +37,13 @@ class TrendRadarAPI:
         self.work_dir = Path(work_dir) if work_dir else Path.cwd()
 
         # 加载配置
+        config: Dict[str, Any]
         if config_path:
-            config = load_config(Path(config_path))
+            config = load_config(str(config_path))
         else:
-            config_path = self.work_dir / "config.yaml"
-            if config_path.exists():
-                config = load_config(config_path)
+            config_file_path = self.work_dir / "config.yaml"
+            if config_file_path.exists():
+                config = load_config(str(config_file_path))
             else:
                 # 使用默认配置
                 config = self._get_default_config()
@@ -50,16 +51,16 @@ class TrendRadarAPI:
         self.config = config
 
         # 加载关键词
-        self.keywords = []
-        self.filter_words = []
-        self.global_filters = []
+        self.keywords: List[Dict[str, Any]] = []
+        self.filter_words: List[str] = []
+        self.global_filters: List[str] = []
 
         if keywords_path:
             self._load_keywords(Path(keywords_path))
         else:
-            keywords_path = self.work_dir / "frequency_words.txt"
-            if keywords_path.exists():
-                self._load_keywords(keywords_path)
+            keywords_file_path = self.work_dir / "frequency_words.txt"
+            if keywords_file_path.exists():
+                self._load_keywords(keywords_file_path)
 
         # 初始化核心组件
         self._init_components()
@@ -158,7 +159,7 @@ class TrendRadarAPI:
         """
         # 确定平台列表
         if platforms:
-            platform_list = [(p, p) for p in platforms]
+            platform_list: List[Union[str, Tuple[str, str]]] = [(p, p) for p in platforms]
         else:
             platforms_config = self.config.get("PLATFORMS", [])
             platform_list = [(p["id"], p.get("name", p["id"])) for p in platforms_config]
@@ -208,19 +209,27 @@ class TrendRadarAPI:
         from ..storage import convert_news_data_to_results
 
         # 获取数据
+        from ..storage.base import NewsData
+
+        news_data_obj: Optional[NewsData] = None
         if not news_data:
             # 从存储读取最新数据
             date_str = datetime.now().strftime("%Y-%m-%d")
             data = self.storage.get_today_all_data(date_str)
             if not data or not data.items:
                 return {"error": "没有可用的新闻数据"}
-            news_data = data.to_dict()
+            news_data_obj = data
+        # 如果 news_data 参数提供了，暂时不支持（需要从字典转换为 NewsData）
+        # 这里为了简化，只使用存储中的数据
+
+        if not news_data_obj:
+            return {"error": "暂不支持从字典数据进行分析"}
 
         # 转换格式
-        results, id_to_name = convert_news_data_to_results(news_data)
+        results, id_to_name = convert_news_data_to_results(news_data_obj)
 
         # 构建标题信息
-        title_info = {}
+        title_info: Dict[str, Dict[str, Dict[str, Any]]] = {}
         for source_id, titles_data in results.items():
             title_info[source_id] = {}
             for title, data in titles_data.items():
@@ -333,7 +342,7 @@ class TrendRadarAPI:
     def get_news_by_date(
         self,
         date: str
-    ) -> Optional[List[Dict[str, Any]]]:
+    ) -> Optional[Dict[str, Any]]:
         """
         获取指定日期的新闻
 
@@ -341,7 +350,7 @@ class TrendRadarAPI:
             date: 日期字符串（YYYY-MM-DD）
 
         Returns:
-            新闻数据列表
+            新闻数据字典
         """
         news_data = self.storage.get_today_all_data(date)
         if news_data:
@@ -385,9 +394,8 @@ class TrendRadarAPI:
 
         html_content = generate_html_report(
             stats=stats,
-            total=total,
-            date=datetime.now().strftime("%Y-%m-%d"),
-            time=datetime.now().strftime("%H:%M:%S"),
+            total_titles=total,
+            output_dir=str(output_path.parent),
         )
 
         # 保存文件

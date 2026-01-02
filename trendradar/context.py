@@ -7,7 +7,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 
 from trendradar.utils.time import (
     get_configured_time,
@@ -78,22 +78,22 @@ class AppContext:
     @property
     def timezone(self) -> str:
         """获取配置的时区"""
-        return self.config.get("TIMEZONE", "Asia/Shanghai")
+        return str(self.config.get("TIMEZONE", "Asia/Shanghai"))
 
     @property
     def rank_threshold(self) -> int:
         """获取排名阈值"""
-        return self.config.get("RANK_THRESHOLD", 50)
+        return int(self.config.get("RANK_THRESHOLD", 50))
 
     @property
     def weight_config(self) -> Dict:
         """获取权重配置"""
-        return self.config.get("WEIGHT_CONFIG", {})
+        return cast(Dict, self.config.get("WEIGHT_CONFIG", {}))
 
     @property
     def platforms(self) -> List[Dict]:
         """获取平台配置列表"""
-        return self.config.get("PLATFORMS", [])
+        return cast(List[Dict], self.config.get("PLATFORMS", []))
 
     @property
     def platform_ids(self) -> List[str]:
@@ -103,22 +103,22 @@ class AppContext:
     @property
     def rss_config(self) -> Dict:
         """获取 RSS 配置"""
-        return self.config.get("RSS", {})
+        return cast(Dict, self.config.get("RSS", {}))
 
     @property
     def rss_enabled(self) -> bool:
         """RSS 是否启用"""
-        return self.rss_config.get("ENABLED", False)
+        return bool(self.rss_config.get("ENABLED", False))
 
     @property
     def rss_feeds(self) -> List[Dict]:
         """获取 RSS 源列表"""
-        return self.rss_config.get("FEEDS", [])
+        return cast(List[Dict], self.rss_config.get("FEEDS", []))
 
     @property
     def display_mode(self) -> str:
         """获取显示模式 (keyword | platform)"""
-        return self.config.get("DISPLAY_MODE", "keyword")
+        return str(self.config.get("DISPLAY_MODE", "keyword"))
 
     # === 时间操作 ===
 
@@ -200,7 +200,7 @@ class AppContext:
 
     def is_first_crawl(self) -> bool:
         """检测是否是当天第一次爬取"""
-        return self.get_storage_manager().is_first_crawl_today()
+        return bool(self.get_storage_manager().is_first_crawl_today())
 
     # === 频率词处理 ===
 
@@ -302,7 +302,8 @@ class AppContext:
             output_dir="output",
             date_folder=self.format_date(),
             time_filename=self.format_time(),
-            render_html_func=lambda *args, **kwargs: self.render_html(*args, rss_items=rss_items, rss_new_items=rss_new_items, **kwargs),
+            render_html_func=lambda report_data, total_titles, is_daily_summary=False, mode="daily", update_info=None:
+                self.render_html(report_data, total_titles, is_daily_summary, mode, update_info, rss_items, rss_new_items),
             matches_word_groups_func=self.matches_word_groups,
             load_frequency_words_func=self.load_frequency_words,
             enable_index_copy=True,
