@@ -8,6 +8,7 @@
 - auto: 根据环境自动选择（GitHub Actions 用 remote，其他用 local）
 """
 
+from typing import TYPE_CHECKING
 from trendradar.storage.base import (
     StorageBackend,
     NewsItem,
@@ -19,12 +20,16 @@ from trendradar.storage.local import LocalStorageBackend
 from trendradar.storage.manager import StorageManager, get_storage_manager
 
 # 远程后端可选导入（需要 boto3）
-try:
+if TYPE_CHECKING:
     from trendradar.storage.remote import RemoteStorageBackend
     HAS_REMOTE = True
-except ImportError:
-    RemoteStorageBackend = None
-    HAS_REMOTE = False
+else:
+    try:
+        from trendradar.storage.remote import RemoteStorageBackend  # type: ignore[misc,assignment]
+        HAS_REMOTE = True
+    except ImportError:
+        RemoteStorageBackend = None  # type: ignore[assignment]
+        HAS_REMOTE = False
 
 __all__ = [
     # 基础类

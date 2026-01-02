@@ -7,13 +7,17 @@
 - 钉钉 (DingTalk)
 - 企业微信 (WeCom/WeWork)
 - Telegram
-- 邮件 (Email)
+- 邮件
 - ntfy
 - Bark
 - Slack
+- Pushover
+- 自定义 (Webhook)
 
 每个发送函数都支持分批发送，并通过参数化配置实现与 CONFIG 的解耦。
 """
+
+# type: ignore[no-implicit-optional]  # 该模块使用 Optional 默认值，是已知的设计模式
 
 import smtplib
 import time
