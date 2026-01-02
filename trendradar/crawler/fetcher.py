@@ -12,7 +12,7 @@
 import json
 import random
 import time
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional, Union
 
 import requests
 
@@ -129,7 +129,7 @@ class DataFetcher:
         Returns:
             (结果字典, ID到名称的映射, 失败ID列表) 元组
         """
-        results = {}
+        results: Dict[str, Dict[str, Dict[str, Any]]] = {}
         id_to_name = {}
         failed_ids = []
 

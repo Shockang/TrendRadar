@@ -9,7 +9,7 @@ TrendRadar 主程序
 import os
 import webbrowser
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Union, cast
 
 import requests
 
@@ -237,7 +237,7 @@ class NewsAnalyzer:
     def _load_analysis_data(
         self,
         quiet: bool = False,
-    ) -> Optional[Tuple[Dict, Dict, Dict, Dict, List, List]]:
+    ) -> Optional[Tuple[Dict, Dict, Dict, Dict, List, List, List]]:
         """统一的数据加载和预处理，使用当前监控平台列表过滤历史数据"""
         try:
             # 获取当前配置的监控平台ID列表
@@ -275,7 +275,7 @@ class NewsAnalyzer:
 
     def _prepare_current_title_info(self, results: Dict, time_info: str) -> Dict:
         """从当前抓取结果构建标题信息"""
-        title_info = {}
+        title_info: Dict[str, Dict[str, Dict[str, Any]]] = {}
         for source_id, titles_data in results.items():
             title_info[source_id] = {}
             for title, title_data in titles_data.items():
@@ -326,9 +326,10 @@ class NewsAnalyzer:
 
         # 如果是 platform 模式，转换数据结构
         if self.ctx.display_mode == "platform" and stats:
+            weight_config = cast(Dict[str, Any], self.ctx.weight_config or {})
             stats = convert_keyword_stats_to_platform_stats(
                 stats,
-                self.ctx.weight_config,
+                weight_config,
                 self.ctx.rank_threshold,
             )
 
@@ -589,7 +590,7 @@ class NewsAnalyzer:
 
     def _crawl_data(self) -> Tuple[Dict, Dict, List]:
         """执行数据爬取"""
-        ids = []
+        ids: List[Union[str, Tuple[str, str]]] = []
         for platform in self.ctx.platforms:
             if "name" in platform:
                 ids.append((platform["id"], platform["name"]))
@@ -951,13 +952,13 @@ class NewsAnalyzer:
             pass
         return rss_items
 
-    def _process_rss_report_and_notification(self, rss_data) -> None:
+    def _process_rss_report_and_notification(self, rss_data) -> Optional[str]:
         """处理 RSS 报告生成和通知发送（独立推送，已废弃）"""
         # 此方法保留用于向后兼容，但不再使用
         # RSS 现在与热榜合并推送
-        pass
+        return None
 
-    def _generate_rss_html_report(self, rss_items: list, feeds_info: dict) -> str:
+    def _generate_rss_html_report(self, rss_items: list, feeds_info: dict) -> Optional[str]:
         """生成 RSS HTML 报告"""
         try:
             from trendradar.report.rss_html import render_rss_html_content
