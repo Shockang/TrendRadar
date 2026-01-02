@@ -145,7 +145,7 @@ class TestStorageManager:
             }
         }
         id_to_name = {"zhihu": "知乎"}
-        failed_ids = []
+        failed_ids: list[str] = []
 
         news_data = convert_crawl_results_to_news_data(
             results, id_to_name, failed_ids, "12:00:00", "2026-01-02"
@@ -158,7 +158,7 @@ class TestStorageManager:
 
     def test_convert_with_failed_sources(self):
         """测试转换包含失败来源的数据"""
-        results = {}
+        results: dict[str, dict[str, dict[str, Any]]] = {}
         id_to_name = {"zhihu": "知乎"}
         failed_ids = ["zhihu"]
 

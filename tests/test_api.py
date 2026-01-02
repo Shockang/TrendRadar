@@ -366,7 +366,7 @@ class TestTrendRadarAPIEdgeCases:
 
     def test_empty_news_list_filter(self, api):
         """测试空新闻列表过滤"""
-        news_data = []
+        news_data: list[dict[str, Any]] = []
         keywords = ["测试"]
         filtered = api.filter_by_keywords(news_data, keywords)
 
@@ -378,7 +378,7 @@ class TestTrendRadarAPIEdgeCases:
             {"title": "测试新闻", "url": "http://example.com/1"}
         ]
 
-        keywords = []
+        keywords: list[str] = []
         filtered = api.filter_by_keywords(news_data, keywords)
 
         # 空关键词时，matches_word_groups 返回 True，所以返回所有新闻
